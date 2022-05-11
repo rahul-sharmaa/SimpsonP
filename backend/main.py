@@ -10,6 +10,48 @@ import matplotlib.pyplot as plt
 import io
 import requests
 
+def survey(results, category_names):
+    labels = list(results.keys())
+    data = np.array(list(results.values()))
+    data_cum = data.cumsum(axis=1)
+    category_colors = plt.get_cmap('RdYlGn')(
+        np.linspace(0.15, 0.85, data.shape[1]))
+
+    fig, ax = plt.subplots(figsize=(19.2, 5))
+    ax.invert_yaxis()
+    ax.xaxis.set_visible(False)
+    ax.set_xlim(0, np.sum(data, axis=1).max())
+
+    for i, (colname, color) in enumerate(zip(category_names, category_colors)):
+        widths = data[:, i]
+        starts = data_cum[:, i] - widths
+        ax.barh(labels, widths, left=starts, height=0.8,
+                label=colname, color=color)
+        xcenters = starts + widths / 2
+
+        r, g, b, _ = color
+        text_color = 'white' if r * g * b < 0.5 else 'darkgrey'
+        for y, (x, c) in enumerate(zip(xcenters, widths)):
+            ax.text(x, y, str(int(c)), ha='center', va='center',
+                    color=text_color)
+    ax.legend(ncol=len(category_names), bbox_to_anchor=(0, 1),
+              loc='lower left', fontsize='small')
+
+    return fig, ax
+
+
+
+def sendS3(fig, namef):
+        buf = io.BytesIO()
+        fig.savefig(buf, format='png')
+        buf.seek(0)
+        url = 'https://6unsq6kj9f.execute-api.us-east-1.amazonaws.com/something/upload'
+        data = buf.read()
+        res = requests.post(url,
+                    data=data,
+                    headers={'Content-Type': 'application/octet-stream', 'file-name': namef})
+
+
 def flatten(t):
     return [item for sublist in t for item in sublist]
 
@@ -45,6 +87,13 @@ def aggregate_adj (df, x, y, conf):
 
 
 def bool_to_str(pandasDF,y):
+    
+    dd=pandasDF.copy()
+    columns1 = pandasDF.columns[pandasDF.nunique() > 1]
+    pandasDF=pandasDF[columns1]
+    # pandasDF = pandasDF[[c for c
+    #    in list(pandasDF)
+    #    if len(pandasDF[c].unique()) > 1]]
     booleandf = pandasDF.select_dtypes(include=[bool])
     booleanDictionary = {True: 'TRUE', False: 'FALSE'}
 
@@ -56,6 +105,7 @@ def bool_to_str(pandasDF,y):
     for column in columns:
         if(column != y and column in num_cols):
             pandasDF[column] = pandasDF[column].map({0: '0', 1: '1', 2: '2',3: '3'})
+            
     return pandasDF
 
 
@@ -79,6 +129,7 @@ def reverse_cat_num(data_copy,data , x):
 
 def find_conf(df,x,y):
     results=[]
+    temps= dict()
     rM = np.corrcoef(df[x], df[y])[0][1]
     print(rM)
     cols=df.loc[:, ~df.columns.isin([x, y])].columns
@@ -105,22 +156,27 @@ def find_conf(df,x,y):
               print("Simpson Paradox holds for this dataset \n")
               print(coefs)
               results.append((col, 1))
+              temps[col]=vals
       else:
               if (rM> 0):
                 print("\n Number of reversed subgroups ")
                 print(sum(1 for i in coefs if i <= 0)/num_vals)
                 results.append((col,sum(1 for i in coefs if i <= 0)/num_vals))
+                temps[col]=[ x for ind,x in enumerate(vals) if  coefs[ind]<= 0]
               elif (rM < 0):
                 print("\n Number of reversed subgroups ")
                 print(sum(1 for i in coefs if i >= 0)/num_vals)
                 results.append((col, sum(1 for i in coefs if i >= 0)/num_vals))
+                temps[col]= [ x for ind,x in enumerate(vals) if  coefs[ind]>= 0]
               else:
                 print("\n Number of reversed subgroups ")
                 print(sum(1 for i in coefs if i != 0)/num_vals)
                 results.append((col, sum(1 for i in coefs if i != 0)/num_vals))
+                temps[col]= [ x for ind,x in enumerate(vals) if  coefs[ind]!= 0]
 
     con = max(results , key = lambda x: x[1])
-    return (con[0],con[1])
+    
+    return (con[0],con[1],temps[con[0]])
 
 
 
@@ -196,8 +252,8 @@ async def find_confounder(
     data = data.dropna()
     # x = input("enter x var name : ")
     # y = input("enter y var name : ")
-    data = bool_to_str(data,y)
     data_copy = data.copy()
+    data = bool_to_str(data,y)
     flag=0
 
     if(type(data[x][0]) == str and type(data[y][0]) == str ):
@@ -227,7 +283,7 @@ async def find_confounder(
         flag=1       
         data = cat_num(data, x)
 
-    conf,prop = find_conf(data,x,y)
+    conf,prop,revs = find_conf(data,x,y)
     #js = data.to_json(orient='index')
 
     if (flag ==0):
@@ -241,23 +297,17 @@ async def find_confounder(
         plt.ylabel(y)
         for i,col in enumerate(data_copy[conf].unique()):
           qf=data_copy[data_copy[conf]==col]
-          ax.scatter(qf[x], qf[y], color=colors[i],label = col, s = 100)
+          ax.scatter(qf[x], qf[y], color=colors[i],label = col, s = 70)
           m, b = np.polyfit(qf[x], qf[y], 1)
           ax.plot(qf[x], m*qf[x] + b,color=colors[i],label=col)
         ax.legend()
-        buf = io.BytesIO()
-        fig.savefig(buf, format='png')
-        buf.seek(0)
-        url = 'https://6unsq6kj9f.execute-api.us-east-1.amazonaws.com/something/upload'
-        data = buf.read()
-        namef=conf+'.png'
-        res = requests.post(url,
-                    data=data,
-                    headers={'Content-Type': 'application/octet-stream', 'file-name': namef})
+        namef=conf+x+y+'.png' # name of file 
+        sendS3(fig, namef) # Sending photo to AWS S3 to save and later use in source component
         return  {
-                'response': 'https://huseynphotos.s3.eu-north-1.amazonaws.com/'+conf+'.png',
+                'response': 'https://huseynphotos.s3.eu-north-1.amazonaws.com/'+namef,
                 'confounding_variable': conf,
-                'reversed_params': prop
+                'reversed_params': prop,
+                'revs': list(revs)
                 }
 
     agg_data, disagg_data = aggregate(data,x,y,conf)
@@ -265,10 +315,25 @@ async def find_confounder(
     fixed_agg_data = aggregate_adj(data,x,y,conf)
     fixed_agg_data = json.loads(json.dumps(reverse_cat_num(data_copy,fixed_agg_data,x).to_dict(orient='records')))
 
+    conf_vals=data_copy[conf].unique()
+    dyI=dict()
+    # dyF =dict()
+    for v in data_copy[x].unique():
+      tdf=data_copy[data_copy[x] ==v]
+      temp=[ tdf[tdf[conf] ==i].size for i in conf_vals]
+      # s=sum(temp)
+      # tempF=[s/x*x for x in temp]
+      dyI[v]=temp
+      # dyF[v]=tempF
+    fig,ax= survey(dyI,list(conf_vals))
+    namef=conf+x+y+x1+x2+'I'+'.png'
+    sendS3(fig, namef) # Sending photo to AWS S3 to save and later use in source component
     return {
+            'dist': 'https://huseynphotos.s3.eu-north-1.amazonaws.com/'+namef,
             'confounding_variable': conf,
             'reversed_params' : prop,
             'agg_data': agg_data,
             'disagg_date': disagg_data,
-            'fixed_agg_data': fixed_agg_data
+            'fixed_agg_data': fixed_agg_data,
+            'revs': list(revs)
             }
