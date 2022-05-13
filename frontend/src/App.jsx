@@ -1,7 +1,6 @@
 
 import { Typography, Button, Paper, Input } from '@mui/material';
 import Container from '@mui/material/Container';
-import simpson from './images/simpson.gif'
 import axios from 'axios'
 import { useEffect, useState } from 'react';
 import DataTable from './components/DataTable';
@@ -11,6 +10,7 @@ import CircularProgress from '@mui/material/CircularProgress';
 import { green } from '@mui/material/colors';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import RingLoader from "react-spinners/RingLoader";
 function App() {
   
   const [loading,Setloading]=useState(true)
@@ -62,7 +62,7 @@ const handleFile=(e)=>{
 const handleSumbit=(e)=>{
   e.preventDefault();
   SetDataLoading(true)
-
+  SetData([])
   for(let key in AllData){
     formData.append(key,AllData[key])
   }
@@ -97,17 +97,17 @@ useEffect(()=>{
 },[])
   return (
   <>
- { loading? <div className='loading'>
-<img src={simpson} alt="" />
-<h2>Simpson's Paradox</h2>
-  </div>:
+ { loading? 
+   <div className="sweet-loading">
+   <RingLoader color={"#1976D2"} loading={loading}  size={200} />
+ </div>:
     <div className="App">
     <Container align="center" sx={{paddingTop:"20px"}}>
     <ToastContainer/>
 {/* Same as */}
 <ToastContainer />
      <Paper sx={{paddingBlock:"40px",marginBottom:"40px"}} elevation={6}>
-     <Typography variant='h3' color="secondary">
+     <Typography variant='h3' color="primary">
       Simpson's Paradox
       </Typography>
      <Typography variant='h6' color="primary" sx={{marginTop:"30px",marginBottom:"20px"}}>
