@@ -8,6 +8,8 @@ function DataTable({data}) {
          <div>
           <Typography variant='h3' sx={{marginBottom:"30px"}}  className='title'>
           Simpson's Paradox <Typography variant='h3' component={"span"}  color="error">{data.reversed_params===0? "Not DETECTED":" DETECTED" }</Typography></Typography>
+          <Typography variant='h3' sx={{marginBottom:"30px"}}  className='title'>
+         Form:<Typography variant='h3' component={"span"}  color="error">{data.agg_data? " Relative Rates":" Linear Rates" }</Typography></Typography>
           <Typography variant='h3' className='title'>Confounding variable: <Typography variant='h3' component={"span"} color={"error"}>{data.confounding_variable}</Typography></Typography>
       
           <Typography variant='h5' className='title' component={"div"} sx={{marginTop:"20px",marginBottom:"50px"}}>
@@ -114,6 +116,9 @@ function DataTable({data}) {
             data.dist&&
             <div>
               <Typography variant='h4' sx={{marginBottom:"20px"}}>Data Distribution </Typography>
+              <Typography variant='p' component={"h5"} sx={{marginBottom:"20px",color:"gray"}}>
+                Distribution of data instances among the subgroups of the confounding variable in original data.<br/> 
+              Uneven distribution of data causes the paradox.</Typography>
                <img src={data.dist} width='100%' height='400' alt="" />
             </div>
           }
