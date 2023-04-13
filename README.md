@@ -1,4 +1,4 @@
-# SimpsonP
+# Overcoming the Impact of Statistical Paradoxes in Artificial Intelligence: Towards Fair and Trustworthy Decision Making
 ## Project link: https://simpsonparadox.netlify.app/
 
 ## Structure
@@ -14,3 +14,5 @@
 and x2 from the dropdown list of values of x (Fig. 16)"
 ■ Step 4: "Press "Show" button and wait until the results are outputted (Fig. 15
 37
+Disclaimer
+This tool is provided as-is, and there are no guarantees that it fits your purposes or that it is bug-free. Use it at your own risk!
