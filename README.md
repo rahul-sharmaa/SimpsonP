@@ -1,4 +1,4 @@
-# Overcoming the Impact of Statistical Paradoxes in Artificial Intelligence: Towards Fair and Trustworthy Decision Making
+# Overcoming the Impact of Statistical Paradoxes in Expert Systems: Towards Fair and Trustworthy Decision Making
 ## Project link: https://simpsonparadox.netlify.app/
 
 ## Structure
