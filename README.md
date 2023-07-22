@@ -1,5 +1,5 @@
 # Overcoming the Impact of Statistical Paradoxes in Expert Systems: Towards Fair and Trustworthy Decision Making
-## Project link: https://simpsonparadox.netlify.app/
+## Application Link: https://confounding.netlify.app/
 
 ## Structure
 - frontend React JS
